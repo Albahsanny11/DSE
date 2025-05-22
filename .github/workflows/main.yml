@@ -1,0 +1,28 @@
+name: Run Colab Notebook
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # This schedules the workflow to run daily at midnight UTC
+
+jobs:
+  run_notebook:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x' # Specify the Python version you need
+
+    - name: Install dependencies
+      run: |
+        pip install colab_exporter
+        pip install -r requirements.txt # If you have a requirements.txt file
+
+    - name: Run notebook
+      run: |
+        colab_exporter --to script your_notebook.ipynb
+        python your_notebook.py
