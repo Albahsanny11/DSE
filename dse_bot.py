@@ -43,7 +43,7 @@ gmail = build("gmail", "v1", credentials=creds)
 # GET DSE DATA
 # -------------------------
 url = "https://www.dse.co.tz/"
-res = requests.get(url)
+res = requests.get(url, verify=False) 
 tables = pd.read_html(res.text)
 data = tables[0]  # assumes first table is the market summary
 
