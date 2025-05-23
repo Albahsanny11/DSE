@@ -28,5 +28,7 @@ jobs:
 
 
     - name: Run DSE analysis script
+       env:
+       GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
       run: |
-        python dse_bot.py
+       python dse_bot.py
