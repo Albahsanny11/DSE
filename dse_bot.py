@@ -2,10 +2,10 @@ import requests
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
-from email.mime.text import MIMEText
-import base64
-from googleapiclient.discovery import build
 import os
+import re
+import smtplib
+from email.mime.text import MIMEText
 from datetime import datetime
 
 # -------------------------
@@ -22,7 +22,6 @@ creds = Credentials.from_service_account_file(
     "service_account.json",
     scopes=[
         "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/gmail.send",
         "https://www.googleapis.com/auth/drive"
     ]
 )
@@ -37,14 +36,11 @@ except gspread.SpreadsheetNotFound:
     sheet = sh.sheet1
     print(f"✅ Created and shared '{SHEET_NAME}' with {GMAIL_TO}")
 
-gmail = build("gmail", "v1", credentials=creds)
-
 # -------------------------
 # GET DSE DATA
 # -------------------------
 url = "https://www.dse.co.tz/"
-res = requests.get(url, verify=False) 
-from io import StringIO
+res = requests.get(url, verify=False)
 
 tables = pd.read_html(res.text)
 print(f"Found {len(tables)} tables on DSE site")
@@ -53,26 +49,21 @@ print(f"Found {len(tables)} tables on DSE site")
 for idx, table in enumerate(tables):
     print(f"Table {idx} Columns: {list(table.columns)}")
 
-data = tables[3]  # Based on your output, table 3 has the relevant columns
-data = data[["Symbol", "Close", "Change"]]  # Use actual column names
-
-# Rename to match expected names
+data = tables[3]  # Based on structure from earlier logs
+data = data[["Symbol", "Close", "Change"]]  # Columns we need
 data.rename(columns={"Symbol": "Security", "Close": "Closing Price"}, inplace=True)
 
 # Clean up and add trend info
 data = data.dropna(subset=["Security", "Closing Price"])
-import re
 
-# Strip all characters except digits, dot, minus (and %)
 def clean_percent(val):
     try:
-        val = re.sub(r"[^\d.\-]+", "", str(val))  # keep digits, minus, dot
+        val = re.sub(r"[^\d.\-]+", "", str(val))
         return float(val) if val else 0.0
     except:
         return 0.0
 
 data["Change (%)"] = data["Change"].apply(clean_percent)
-
 data["Trend"] = data["Change (%)"].apply(lambda x: "UP 📈" if x > 0 else "DOWN 📉" if x < 0 else "FLAT")
 
 # -------------------------
@@ -84,9 +75,6 @@ for _, row in data.iterrows():
 # -------------------------
 # SEND EMAIL SUMMARY via SMTP
 # -------------------------
-import smtplib
-from email.mime.text import MIMEText
-
 summary = "\n".join([f"{row['Security']}: {row['Closing Price']} TZS ({row['Trend']})"
                      for _, row in data.iterrows()])
 
@@ -99,7 +87,13 @@ msg["To"] = GMAIL_TO
 # Load Gmail App Password from environment (GitHub Secret)
 app_password = os.environ.get("GMAIL_APP_PASSWORD")
 
-# Send the email via Gmail SMTP
+# Debug: Confirm password is loading
+if not app_password:
+    raise Exception("❌ GMAIL_APP_PASSWORD is missing or failed to load from GitHub Secrets.")
+else:
+    print("✅ GMAIL_APP_PASSWORD loaded successfully.")
+
+# Send email via Gmail SMTP
 with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
     smtp.login(GMAIL_TO, app_password)
     smtp.send_message(msg)
