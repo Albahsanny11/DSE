@@ -27,7 +27,16 @@ creds = Credentials.from_service_account_file(
     ]
 )
 gc = gspread.authorize(creds)
-sheet = gc.open(SHEET_NAME).sheet1
+
+try:
+    sheet = gc.open(SHEET_NAME).sheet1
+except gspread.SpreadsheetNotFound:
+    print(f"📄 Sheet '{SHEET_NAME}' not found. Creating a new one...")
+    sh = gc.create(SHEET_NAME)
+    sh.share(GMAIL_TO, perm_type='user', role='writer')
+    sheet = sh.sheet1
+    print(f"✅ Created and shared '{SHEET_NAME}' with {GMAIL_TO}")
+
 gmail = build("gmail", "v1", credentials=creds)
 
 # -------------------------
