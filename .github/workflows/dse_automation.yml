@@ -23,9 +23,10 @@ jobs:
        python -m pip install --upgrade pip
        pip install gspread google-auth pandas matplotlib scikit-learn requests google-api-python-client
 
-    - name: Create service account JSON
+    - name: Decode service account
       run: |
-        echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT }}" > service_account.json
+       echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT_B64 }}" | base64 -d > service_account.json
+
 
     - name: Run DSE analysis script
       run: |
