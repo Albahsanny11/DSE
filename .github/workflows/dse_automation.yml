@@ -2,8 +2,8 @@ name: DSE Daily Automation
 
 on:
   schedule:
-    - cron: '0 7 * * *'  # Runs daily at 7 AM UTC (~10 AM Tanzania time)
-  workflow_dispatch:     # Allows manual run
+    - cron: '0 7 * * *'  # daily at 10am Tanzania time
+  workflow_dispatch:     # ✅ enables manual run
 
 jobs:
   run-notebook:
