@@ -44,8 +44,22 @@ gmail = build("gmail", "v1", credentials=creds)
 # -------------------------
 url = "https://www.dse.co.tz/"
 res = requests.get(url, verify=False) 
-tables = pd.read_html(res.text)
-data = tables[0]  # assumes first table is the market summary
+from io import StringIO
+
+tables = pd.read_html(StringIO(res.text))  # safer HTML handling
+print(f"Found {len(tables)} tables on DSE site")
+
+# Print all table columns for debugging
+for i, t in enumerate(tables):
+    print(f"\nTable {i} Columns: {t.columns.tolist()}")
+
+# Try to find a table with 'Security' and 'Closing Price'
+for table in tables:
+    if 'Security' in table.columns and 'Closing Price' in table.columns:
+        data = table
+        break
+else:
+    raise ValueError("No table with 'Security' and 'Closing Price' found.")
 
 # Clean up
 data = data.dropna(subset=["Security", "Closing Price"])
