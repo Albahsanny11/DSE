@@ -61,7 +61,18 @@ data.rename(columns={"Symbol": "Security", "Close": "Closing Price"}, inplace=Tr
 
 # Clean up and add trend info
 data = data.dropna(subset=["Security", "Closing Price"])
-data["Change (%)"] = data["Change"].fillna(0).astype(str).str.replace('%', '').astype(float)
+import re
+
+# Strip all characters except digits, dot, minus (and %)
+def clean_percent(val):
+    try:
+        val = re.sub(r"[^\d.\-]+", "", str(val))  # keep digits, minus, dot
+        return float(val) if val else 0.0
+    except:
+        return 0.0
+
+data["Change (%)"] = data["Change"].apply(clean_percent)
+
 data["Trend"] = data["Change (%)"].apply(lambda x: "UP 📈" if x > 0 else "DOWN 📉" if x < 0 else "FLAT")
 
 # -------------------------
