@@ -82,19 +82,26 @@ for _, row in data.iterrows():
     sheet.append_row([DATE, row["Security"], row["Closing Price"], row["Change (%)"], row["Trend"]])
 
 # -------------------------
-# SEND EMAIL SUMMARY
+# SEND EMAIL SUMMARY via SMTP
 # -------------------------
+import smtplib
+from email.mime.text import MIMEText
+
 summary = "\n".join([f"{row['Security']}: {row['Closing Price']} TZS ({row['Trend']})"
                      for _, row in data.iterrows()])
 
-message = MIMEText(f"DSE Trends for {DATE}:\n\n{summary}")
-message["to"] = GMAIL_TO
-message["subject"] = f"DSE Market Summary - {DATE}"
+body = f"DSE Trends for {DATE}:\n\n{summary}"
+msg = MIMEText(body)
+msg["Subject"] = f"DSE Market Summary - {DATE}"
+msg["From"] = GMAIL_TO
+msg["To"] = GMAIL_TO
 
-create_message = {
-    "raw": base64.urlsafe_b64encode(message.as_bytes()).decode()
-}
+# Load Gmail App Password from environment (GitHub Secret)
+app_password = os.environ.get("GMAIL_APP_PASSWORD")
 
-gmail.users().messages().send(userId="me", body=create_message).execute()
+# Send the email via Gmail SMTP
+with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+    smtp.login(GMAIL_TO, app_password)
+    smtp.send_message(msg)
 
-print(f"DSE automation complete for {DATE}. Summary sent to {GMAIL_TO}.")
+print(f"✅ Email sent to {GMAIL_TO}")
