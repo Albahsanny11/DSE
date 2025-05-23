@@ -46,24 +46,22 @@ url = "https://www.dse.co.tz/"
 res = requests.get(url, verify=False) 
 from io import StringIO
 
-tables = pd.read_html(StringIO(res.text))  # safer HTML handling
+tables = pd.read_html(res.text)
 print(f"Found {len(tables)} tables on DSE site")
 
-# Print all table columns for debugging
-for i, t in enumerate(tables):
-    print(f"\nTable {i} Columns: {t.columns.tolist()}")
+# Use the detailed market summary table (likely Table 3)
+for idx, table in enumerate(tables):
+    print(f"Table {idx} Columns: {list(table.columns)}")
 
-# Try to find a table with 'Security' and 'Closing Price'
-for table in tables:
-    if 'Security' in table.columns and 'Closing Price' in table.columns:
-        data = table
-        break
-else:
-    raise ValueError("No table with 'Security' and 'Closing Price' found.")
+data = tables[3]  # Based on your output, table 3 has the relevant columns
+data = data[["Symbol", "Close", "Change"]]  # Use actual column names
 
-# Clean up
+# Rename to match expected names
+data.rename(columns={"Symbol": "Security", "Close": "Closing Price"}, inplace=True)
+
+# Clean up and add trend info
 data = data.dropna(subset=["Security", "Closing Price"])
-data["Change (%)"] = data["Closing Price"].pct_change().fillna(0).apply(lambda x: round(x * 100, 2))
+data["Change (%)"] = data["Change"].fillna(0).astype(str).str.replace('%', '').astype(float)
 data["Trend"] = data["Change (%)"].apply(lambda x: "UP 📈" if x > 0 else "DOWN 📉" if x < 0 else "FLAT")
 
 # -------------------------
